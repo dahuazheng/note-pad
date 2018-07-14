@@ -1,10 +1,14 @@
-
 const header = {
   state: {
     title: '便签',
-    page: 'home'
+    page: 'home',
+    showSearchBox: false
   },
-  mutations: {},
+  mutations: {
+    openSearchBox(state, isShow) {
+      this.state.showSearchBox = isShow
+    }
+  },
   actions: {},
   getters: {}
 }

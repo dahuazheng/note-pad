@@ -1,18 +1,24 @@
 <template>
-  <main class="home">
-    <pull-to class="scroller-view" :top-load-method="refresh" :bottom-load-method="pullUp">
-      <ul v-for="note in notes">
-        <li>
-          {{ note.title }}<br>
-          <small>
-            <span class="create-time">{{ note.time }}</span>
-            <span class="summarize">{{ note.message }}</span>
-          </small>
-        </li>
-      </ul>
-      <div>{{ message }}</div>
-    </pull-to>
-    <button class="insert">＋</button>
+  <main class="home"
+        :style="{ transform: 'translateY(' + touch.moveY + 'px)'}"
+        @touchstart="touchstart"
+        @touchmove="touchmove"
+        @touchend="touchend">
+    <div class="search-box"
+         v-show="showSearchBtn"
+    >
+      <i></i><span>搜索</span>
+    </div>
+    <ul v-for="note in notes">
+      <li @click="test1">
+        {{ note.title }}<br>
+        <small>
+          <span class="create-time">{{ note.time }}</span>
+          <span class="summarize">{{ note.message }}</span>
+        </small>
+      </li>
+    </ul>
+    <button class="insert" @click="openSearchBox(true)">＋</button>
     <Editor></Editor>
   </main>
 </template>
@@ -22,32 +28,23 @@
   import Header from '@/components/Header.vue'
   import Editor from '@/components/Editor.vue'
 
-  import { mapState } from 'vuex'
-
-  import PullTo from 'vue-pull-to'
-
-  const TOP_DEFAULT_CONFIG = {
-    pullText: "下拉刷新",//文本显示，当你拉下来
-    triggerText: "释放更新",//当触发距离被拉低出现的文本
-    loadingText: "加载中... ",//该文字负载
-    doneText: '加载完成',//加载完成的文本
-    failText: '加载失败',//加载失败文本 
-    loadedStayTime: 400,//加载后留下的时间ms
-    stayDistance: 50,//触发刷新后的距离
-    triggerDistance: 70  //下拉触发器触发距离
-  }
+  import { mapMutations, mapState } from 'vuex'
 
   export default {
     name: 'home',
     components: {
       Header,
-      Editor,
-      PullTo
+      Editor
     },
     data() {
       return {
-        showSearchBox: false,
-        message: '111'
+        showSearchBtn: false,
+        touch: {
+          startY: 0,
+          moveY: 0,
+          endY: 0,
+          distance: 90
+        }
       }
     },
     computed: {
@@ -56,19 +53,46 @@
       })
     },
     methods: {
-      refresh(loaded) {
-        this.showSearchBox = true;
-        this.message = '222';
-        loaded('done')
+      ...mapMutations({
+        openSearchBox: 'openSearchBox'
+      }),
+      touchstart(event) {
+        let touch = event.touches[0];
+        this.touch.startY = Math.floor(touch.pageY);
       },
-      pullUp(loaded) {
-        this.showSearchBox = false;
-        this.message = '111';
-        loaded('done')
+      touchmove(event) {
+        let touch = event.touches[0];
+        let movey = Math.floor(touch.pageY);
+        let Y = movey - this.touch.startY;
+
+        if (Y < -this.touch.distance) {
+          this.touch.moveY = -this.touch.distance
+        } else if (Y < this.touch.distance && Y > -this.touch.distance) {
+          this.touch.moveY = Y
+        } else {
+          this.touch.moveY = this.touch.distance
+        }
+      },
+      touchend(event) {
+        this.touch.endY = Math.floor(event.changedTouches[0].pageY);
+        let ny = this.touch.endY - this.touch.startY;
+        if (ny > this.touch.distance) {
+          this.showSearchBtn = true
+        }
+        if (ny < -this.touch.distance) {
+          this.showSearchBtn = false
+        }
+        this.touch.moveY = 0
+      },
+      //$store.commit('openSearchBox', true),
+      test1() {
+        console.log(222);
+        console.log(this.$store.state.header.title)
       }
+
     },
     mounted() {
-
+      console.log(222);
     }
   }
 
@@ -85,6 +109,23 @@
   }
 
   main {
+    .search-box {
+      margin-left: 10px;
+      padding: 5px 0;
+      line-height: 36px;
+      color: #999;
+      text-align: center;
+      border-bottom: 1px solid #f1f1f1;
+
+      i {
+        vertical-align: middle;
+        font-size: 1rem;
+      }
+      span {
+        vertical-align: middle;
+      }
+    }
+
     ul {
       .clear-ul;
 
@@ -92,6 +133,7 @@
         margin-left: 10px;
         padding: 10px 10px 10px 0;
         border-bottom: 1px solid #f1f1f1;
+        line-height: 1.4;
         font-size: 1rem;
 
         small {
